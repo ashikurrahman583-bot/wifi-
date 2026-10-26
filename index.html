@@ -920,11 +920,13 @@ function openBk(){PFX=null;var a=bkAge(),np=0;S.u.forEach(function(p){np+=(p.pl|
  document.getElementById("md").classList.remove("hide")}
 document.getElementById("bkb").onclick=openBk;
 /* ☁️ cloud sync (Firebase Realtime Database, REST) */
-var CK="wifi_cloud",CF={url:"",code:"",on:0},RS=0,DIRTY=0,CT=null,CBUSY=0,CMSG="",CMSGT=0,CPT=null,CP=0,CVER="",APPV="2026-10-26.1";
+var CK="wifi_cloud",CF={url:"",code:"",on:0},RS=0,DIRTY=0,CT=null,CBUSY=0,CMSG="",CMSGT=0,CPT=null,CP=0,CVER="",APPV="2026-10-26.2";
 try{var _c=JSON.parse(localStorage.getItem(CK)||"null");if(_c)CF=_c;RS=+localStorage.getItem("wifi_cloud_rs")||0;DIRTY=+localStorage.getItem("wifi_cloud_dirty")||0;CVER=localStorage.getItem("wifi_cloud_v")||""}catch(e){}
 function cSaveCfg(){try{localStorage.setItem(CK,JSON.stringify(CF));localStorage.setItem("wifi_cloud_rs",RS);localStorage.setItem("wifi_cloud_dirty",DIRTY);localStorage.setItem("wifi_cloud_v",CVER)}catch(e){}}
 function cHex(t){var b=new TextEncoder().encode(t),h="";for(var i=0;i<b.length;i++)h+=("0"+b[i].toString(16)).slice(-2);return h}
-function cUrl(){return CF.url.trim().replace(/\/+$/,"")+"/khata/"+cHex(CF.code.trim())+".json"}
+function cKey(){var c=CF.code.trim();return /^[A-Za-z0-9_-]+$/.test(c)?c:cHex(c)}
+function cUrl(old){return CF.url.trim().replace(/\/+$/,"")+"/khata/"+(old?cHex(CF.code.trim()):cKey())+".json"}
+function cGetMig(){return cReq("GET").then(function(r){if(r&&r.d||cKey()===cHex(CF.code.trim()))return{r:r,mig:0};return cReq("GET",undefined,1).then(function(l){return l&&l.d?{r:l,mig:1}:{r:r,mig:0}}).catch(function(){return{r:r,mig:0}})})}
 function cOk(u){return /^https:\/\/[^\/\s]+\.(firebaseio\.com|firebasedatabase\.app)$/.test(u)}
 function cNow(){try{return new Date().toLocaleTimeString("bn-BD",{hour:"2-digit",minute:"2-digit"})}catch(e){return ""}}
 function updCb(){var b=document.getElementById("cb");if(!b)return;b.innerHTML='☁️ ক্লাউড সিঙ্ক <small>'+(S.demo?"ডেমো চালু":CF.on?(CMSGT===2?"সমস্যা আছে":DIRTY?"পাঠানো বাকি":"চালু"):"বন্ধ")+'</small>';b.classList.toggle("cdm",!!S.demo);b.classList.toggle("cok",!!CF.on&&CMSGT!==2);b.classList.toggle("cer",!!CF.on&&CMSGT===2)}
@@ -933,21 +935,21 @@ function cSt(t,k){CMSG=t;CMSGT=k||0;var e=document.getElementById("cst"),t2=docu
 function cBar(){var w=document.getElementById("cpgw"),b=document.getElementById("cpg");if(w&&b){w.style.display=CP>0?"block":"none";b.style.width=CP+"%"}}
 function cVer(){var e=document.getElementById("cver");if(e)e.textContent="🏷️ এই ডিভাইসের ভার্সন: "+APPV+" · ক্লাউডে শেষ সিঙ্ক করা ভার্সন: "+(CVER||"—")}
 function cPg(p){CP=p;CMSG="🔄 সিঙ্ক হচ্ছে... "+p+"%";CMSGT=0;var e=document.getElementById("cst"),t2=document.getElementById("cstt");if(e){e.className="cst";if(t2)t2.textContent=cTxt()}cBar();cVer();updCb()}
-function cBackup(){if(!CF.url||!CF.code){toast("আগে সংযুক্ত করুন");return}toast("☁️ ক্লাউড থেকে নামানো হচ্ছে...");cReq("GET").then(function(r){if(!r||!r.d){toast("ক্লাউডে কোনো ব্যাকআপ নেই");return}dl("wifi-cloud-backup-"+todayStr()+".json",r.d,"application/json")}).catch(function(){toast("⚠ ক্লাউড থেকে নামানো যায়নি")})}
-function cReq(m,body){var o={method:m};if(body!==undefined){o.body=body;o.headers={"Content-Type":"application/json"}}return fetch(cUrl(),o).then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.json()})}
+function cBackup(){if(!CF.url||!CF.code){toast("আগে সংযুক্ত করুন");return}toast("☁️ ক্লাউড থেকে নামানো হচ্ছে...");cGetMig().then(function(x){var r=x.r;if(!r||!r.d){toast("ক্লাউডে কোনো ব্যাকআপ নেই");return}dl("wifi-cloud-backup-"+todayStr()+".json",r.d,"application/json")}).catch(function(){toast("⚠ ক্লাউড থেকে নামানো যায়নি")})}
+function cReq(m,body,old){var o={method:m};if(body!==undefined){o.body=body;o.headers={"Content-Type":"application/json"}}return fetch(cUrl(old),o).then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.json()})}
 function cApply(d,ts){cPg(80);var n=JSON.parse(d);if(!n||!n.u||n.demo)throw new Error("bad");S=n;S.fr=S.fr||[];S.e=S.e||[];LAST=JSON.stringify(S);UNDO=[];try{localStorage.setItem(KEY,LAST)}catch(e){}var u=document.getElementById("ud");if(u)u.disabled=true;RS=ts;DIRTY=0;cSaveCfg();renderAll()}
 function cPush(){if(S.demo)return Promise.resolve();var ts=Date.now();cPg(80);return cReq("PUT",JSON.stringify({ts:ts,v:APPV,d:JSON.stringify(S)})).then(function(){RS=ts;DIRTY=0;CVER=APPV;cSaveCfg()})}
 function cSync(){
  if(S.demo){cSt("🧪 ডেমো ডেটা চালু আছে — এটি ক্লাউডে পাঠানো বা ক্লাউড থেকে নেওয়া হচ্ছে না।",0);return Promise.resolve()}
  if(!CF.url||!CF.code||CBUSY)return Promise.resolve();
  CBUSY=1;cPg(10);
- return cReq("GET").then(function(r){cPg(50);if(r&&r.d)CVER=r.v||"পুরাতন";
+ return cGetMig().then(function(x){var r=x.r,mig=x.mig;cPg(50);if(r&&r.d)CVER=r.v||"পুরাতন";
   if(!r||!r.d)return cPush();
   if(r.ts>RS){
-   if(DIRTY)return askP("ক্লাউডে আগের হিসাব আছে, আবার এই ডিভাইসেও আলাদা তথ্য আছে। কোনটা রাখবেন?\n\n• ক্লাউডের হিসাব নিলে এই ডিভাইসের তথ্য বদলে যাবে।\n• এই ডিভাইসের হিসাব রাখলে ক্লাউডের তথ্য বদলে যাবে।","ক্লাউডের হিসাব নিন","এই ডিভাইসের হিসাব রাখুন").then(function(c){if(c){cApply(r.d,r.ts)}else return cPush()});
-   cApply(r.d,r.ts);return;
+   if(DIRTY)return askP("ক্লাউডে আগের হিসাব আছে, আবার এই ডিভাইসেও আলাদা তথ্য আছে। কোনটা রাখবেন?\n\n• ক্লাউডের হিসাব নিলে এই ডিভাইসের তথ্য বদলে যাবে।\n• এই ডিভাইসের হিসাব রাখলে ক্লাউডের তথ্য বদলে যাবে।","ক্লাউডের হিসাব নিন","এই ডিভাইসের হিসাব রাখুন").then(function(c){if(c){cApply(r.d,r.ts);if(mig)return cPush()}else return cPush()});
+   cApply(r.d,r.ts);if(mig)return cPush();return;
   }
-  if(DIRTY)return cPush();
+  if(DIRTY||mig)return cPush();
  }).then(function(){CBUSY=0;cPg(100);cSt("✔ সিঙ্ক ঠিক আছে · "+cNow(),1)}).catch(function(){CBUSY=0;CP=0;cSt("⚠ সংযোগ হয়নি। ইন্টারনেট, Database URL ও Firebase Rules দেখুন। (Claude-এর প্রিভিউতে বাইরের সংযোগ ব্লক থাকে, ফাইলটি নিজের ব্রাউজারে খুললে কাজ করবে।)",2)})
 }
 function cSched(){if(!CF.on)return;clearTimeout(CT);CT=setTimeout(function(){cSync()},2500)}

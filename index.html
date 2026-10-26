@@ -255,6 +255,7 @@ td.p1::after,.mc.p1::after{content:"✔"}td.p0::after,.mc.p0::after{content:"✖
 .pp.fx tbody tr:nth-child(n+16),.pp.fx .pc:nth-child(n+16){animation-delay:.5s}
 .dash{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:12px;margin:2px 0 14px}
 .dc{background:var(--sf);border:1px solid var(--ln);border-radius:14px;padding:14px;box-shadow:0 2px 10px -5px rgba(0,0,0,.25);animation:pageIn .5s ease both}
+@media (min-width:700px){.dash{grid-template-columns:repeat(3,minmax(0,1fr))}.dc{min-width:0}}
 .dc:nth-child(2){animation-delay:.08s}.dc:nth-child(3){animation-delay:.16s}
 .dt{font-weight:600;color:var(--ac);margin-bottom:10px;font-size:14px}
 .ring{position:relative;width:110px;height:110px;margin:0 auto}
@@ -364,7 +365,7 @@ b.pf{cursor:pointer;border-bottom:1px dotted var(--mu)}
 .cpgw{display:none;height:9px;border-radius:99px;background:color-mix(in srgb,var(--ln) 70%,transparent);overflow:hidden;margin:10px 0 2px}
 .cpgw i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#22c55e,#4ade80);transition:width .35s ease}
 .cver{font-size:13px;line-height:1.7;margin-top:10px;padding-top:10px;border-top:1px solid var(--ln)}
-.clb.c5{background:linear-gradient(135deg,#b45309,#f59e0b);color:#fff;border-color:transparent}
+.clb.c5{background:linear-gradient(135deg,#b45309,#f59e0b);color:#fff;border-color:transparent;display:inline-block;width:auto;min-height:34px;font-size:14px;border-radius:10px;padding:6px 14px}
 .clb.c4{background:var(--er);color:var(--ert);border-color:var(--ert)}
 .bkrow{display:flex;gap:8px;margin:0 0 12px}
 .bkrow .bkb{margin:0;flex:1 1 0;min-width:0}
@@ -855,9 +856,9 @@ function demoData(){
   if(q%5===2)e.push({c:CATS[2],a:450,m:q,n:"কেবল ও কানেক্টর"});
   if(q===Math.min(3,CURM))e.push({c:CATS[1],a:2500,m:q,n:"নতুন রাউটার কেনা"})}
  return{u:u,o:o,r:r,fr:[],e:e,demo:1}}
-function askP(msg,okT,noT){return new Promise(function(res){
+function askP(msg,okT,noT,ttl){return new Promise(function(res){
  var d=document.createElement("div");d.className="md";d.style.zIndex=140;
- d.innerHTML='<div class="mb" style="padding:16px"><p style="margin:0 0 6px;line-height:1.7;white-space:pre-line">'+esc(msg)+'</p><button type="button" class="clb c1" data-a="1">'+esc(okT||"হ্যাঁ, চালিয়ে যান")+'</button>'+(noT===false?'':'<button type="button" class="clb c3" data-a="0">'+esc(noT||"বাতিল")+'</button>')+'</div>';
+ d.innerHTML='<div class="mb" style="padding:16px">'+(ttl?'<div class="dt" style="font-size:16px">'+esc(ttl)+'</div>':'')+'<p style="margin:0 0 6px;line-height:1.7;white-space:pre-line">'+esc(msg)+'</p><button type="button" class="clb c1" data-a="1">'+esc(okT||"হ্যাঁ, চালিয়ে যান")+'</button>'+(noT===false?'':'<button type="button" class="clb c3" data-a="0">'+esc(noT||"বাতিল")+'</button>')+'</div>';
  d.onclick=function(e){var x=e.target.closest("[data-a]");if(!x)return;d.remove();res(x.dataset.a==="1")};
  document.body.appendChild(d)})}
 function infoP(msg){return askP(msg,"ঠিক আছে",false)}
@@ -920,7 +921,7 @@ function openBk(){PFX=null;var a=bkAge(),np=0;S.u.forEach(function(p){np+=(p.pl|
  document.getElementById("md").classList.remove("hide")}
 document.getElementById("bkb").onclick=openBk;
 /* ☁️ cloud sync (Firebase Realtime Database, REST) */
-var CK="wifi_cloud",CF={url:"",code:"",on:0},RS=0,DIRTY=0,CT=null,CBUSY=0,CMSG="",CMSGT=0,CPT=null,CP=0,CVER="",APPV="2026-10-26.2";
+var CK="wifi_cloud",CF={url:"",code:"",on:0},RS=0,DIRTY=0,CT=null,CBUSY=0,CMSG="",CMSGT=0,CPT=null,CP=0,CVER="",APPV="2026-10-26.5";
 try{var _c=JSON.parse(localStorage.getItem(CK)||"null");if(_c)CF=_c;RS=+localStorage.getItem("wifi_cloud_rs")||0;DIRTY=+localStorage.getItem("wifi_cloud_dirty")||0;CVER=localStorage.getItem("wifi_cloud_v")||""}catch(e){}
 function cSaveCfg(){try{localStorage.setItem(CK,JSON.stringify(CF));localStorage.setItem("wifi_cloud_rs",RS);localStorage.setItem("wifi_cloud_dirty",DIRTY);localStorage.setItem("wifi_cloud_v",CVER)}catch(e){}}
 function cHex(t){var b=new TextEncoder().encode(t),h="";for(var i=0;i<b.length;i++)h+=("0"+b[i].toString(16)).slice(-2);return h}
@@ -946,7 +947,7 @@ function cSync(){
  return cGetMig().then(function(x){var r=x.r,mig=x.mig;cPg(50);if(r&&r.d)CVER=r.v||"পুরাতন";
   if(!r||!r.d)return cPush();
   if(r.ts>RS){
-   if(DIRTY)return askP("ক্লাউডে আগের হিসাব আছে, আবার এই ডিভাইসেও আলাদা তথ্য আছে। কোনটা রাখবেন?\n\n• ক্লাউডের হিসাব নিলে এই ডিভাইসের তথ্য বদলে যাবে।\n• এই ডিভাইসের হিসাব রাখলে ক্লাউডের তথ্য বদলে যাবে।","ক্লাউডের হিসাব নিন","এই ডিভাইসের হিসাব রাখুন").then(function(c){if(c){cApply(r.d,r.ts);if(mig)return cPush()}else return cPush()});
+   if(DIRTY)return askP("ক্লাউডে আগের হিসাব আছে, আবার এই ডিভাইসেও আলাদা তথ্য আছে। কোনটা রাখবেন?\n\n• ক্লাউডের হিসাব নিলে এই ডিভাইসের তথ্য বদলে যাবে।\n• এই ডিভাইসের হিসাব রাখলে ক্লাউডের তথ্য বদলে যাবে।","ক্লাউডের হিসাব নিন","এই ডিভাইসের হিসাব রাখুন","🤝 ডেটা কীভাবে মেলাবেন?").then(function(c){if(!c)return cPush();return askP("এই ডিভাইসের বর্তমান সব ডেটা মুছে ক্লাউডের ডেটা বসবে। তবে আগে এই ডিভাইসের ডেটার একটি ব্যাকআপ ফাইল নেমে যাবে।\n\nনিশ্চিত?","হ্যাঁ, ক্লাউডের ডেটা নিন","বাতিল","☁️ ক্লাউডের ডেটা নেবেন?").then(function(y){if(!y)return;try{dl("wifi-hisab-device-backup-"+todayStr()+".json",JSON.stringify(S),"application/json")}catch(e){}cApply(r.d,r.ts);if(mig)return cPush()})});
    cApply(r.d,r.ts);if(mig)return cPush();return;
   }
   if(DIRTY||mig)return cPush();
